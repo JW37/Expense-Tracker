@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+<div class="min-vh-100 d-flex" style="background: linear-gradient(135deg, #1a56db 0%, #1e40af 50%, #1e3a8a 100%);">
+
+  <!-- Left Panel -->
+  <div class="d-none d-lg-flex flex-column justify-content-center align-items-center text-white" style="width:42%;padding:3rem;">
+    <div style="width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:24px;display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;">
+      <i class="bi bi-bank fs-1 text-white"></i>
+    </div>
+    <h2 class="fw-bold mb-2" style="font-size:2rem;">FaithLedger</h2>
+    <p class="text-white-50 text-center mb-4" style="max-width:300px;">
+      Create your account to start managing your church finances professionally.
+    </p>
+    <div class="d-flex flex-column gap-3" style="max-width:280px;">
+      {% for item in features %}
+      <div class="d-flex align-items-center gap-3">
+        <div style="width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="bi bi-check-lg text-white"></i>
+        </div>
+        <span class="text-white-50 small">{{ item }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Right Panel -->
+  <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="background:#f8fafc;overflow-y:auto;">
+    <div class="w-100" style="max-width:460px;padding:2rem;">
+
+      <div class="text-center mb-4">
+        <div class="d-lg-none mb-3">
+          <div style="width:56px;height:56px;background:#1a56db;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;">
+            <i class="bi bi-bank fs-4 text-white"></i>
+          </div>
+        </div>
+        <h4 class="fw-bold text-dark">Create Account</h4>
+        <p class="text-muted small">Fill in the details to get started</p>
+      </div>
+
+      <div class="card border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-body p-4">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <!-- Name Row -->
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <label class="form-label fw-medium small">First Name <span class="text-danger">*</span></label>
+                <input type="text" name="first_name" value="{{ form_data.first_name|default:'' }}"
+                       class="form-control {% if errors.first_name %}is-invalid{% endif %}"
+                       placeholder="First name">
+                {% if errors.first_name %}
+                  <div class="invalid-feedback">{{ errors.first_name }}</div>
+                {% endif %}
+              </div>
+              <div class="col-6">
+                <label class="form-label fw-medium small">Last Name <span class="text-danger">*</span></label>
+                <input type="text" name="last_name" value="{{ form_data.last_name|default:'' }}"
+                       class="form-control {% if errors.last_name %}is-invalid{% endif %}"
+                       placeholder="Last name">
+                {% if errors.last_name %}
+                  <div class="invalid-feedback">{{ errors.last_name }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label class="form-label fw-medium small">Gmail Address <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-envelope text-muted"></i></span>
+                <input type="email" name="email" value="{{ form_data.email|default:'' }}"
+                       class="form-control {% if errors.email %}is-invalid{% endif %}"
+                       placeholder="your@gmail.com">
+                {% if errors.email %}
+                  <div class="invalid-feedback">{{ errors.email }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Username -->
+            <div class="mb-3">
+              <label class="form-label fw-medium small">Username <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+                <input type="text" name="username" value="{{ form_data.username|default:'' }}"
+                       class="form-control {% if errors.username %}is-invalid{% endif %}"
+                       placeholder="Choose a username">
+                {% if errors.username %}
+                  <div class="invalid-feedback">{{ errors.username }}</div>
+                {% endif %}
+              </div>
+              <div class="form-text">This is what you'll use to log in.</div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label class="form-label fw-medium small">Password <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-lock text-muted"></i></span>
+                <input type="password" name="password1" id="password1"
+                       class="form-control {% if errors.password1 %}is-invalid{% endif %}"
+                       placeholder="Create a password">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('password1', this)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% if errors.password1 %}
+                  <div class="invalid-feedback">{{ errors.password1 }}</div>
+                {% endif %}
+              </div>
+              <!-- Password strength hints -->
+              <div class="mt-2 d-flex flex-wrap gap-2" id="pwd-hints">
+                <span class="badge bg-light text-muted border" id="hint-len">8+ chars</span>
+                <span class="badge bg-light text-muted border" id="hint-num">1 number</span>
+                <span class="badge bg-light text-muted border" id="hint-spl">1 special char</span>
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+              <label class="form-label fw-medium small">Confirm Password <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-lock-fill text-muted"></i></span>
+                <input type="password" name="password2" id="password2"
+                       class="form-control {% if errors.password2 %}is-invalid{% endif %}"
+                       placeholder="Repeat your password">
+                <button class="btn btn-outline-secondary" type="button" onclick="togglePwd('password2', this)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                {% if errors.password2 %}
+                  <div class="invalid-feedback">{{ errors.password2 }}</div>
+                {% endif %}
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold rounded-3">
+              <i class="bi bi-person-plus me-2"></i>Create Account
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <p class="text-center text-muted small mt-3">
+        Already have an account?
+        <a href="{% url 'login' %}" class="text-primary fw-semibold text-decoration-none">Sign In</a>
+      </p>
+      <p class="text-center text-muted small mt-1">
+        FaithLedger &copy; {% now "Y" %} · Church Account Management
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'bi bi-eye';
+  }
+}
+
+// Live password strength hints
+document.getElementById('password1').addEventListener('input', function() {
+  const val = this.value;
+  const setHint = (id, ok) => {
+    const el = document.getElementById(id);
+    el.className = ok ? 'badge bg-success text-white border' : 'badge bg-light text-muted border';
+  };
+  setHint('hint-len', val.length >= 8);
+  setHint('hint-num', /\d/.test(val));
+  setHint('hint-spl', /[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\/]/.test(val));
+});
+</script>
+{% endblock %}

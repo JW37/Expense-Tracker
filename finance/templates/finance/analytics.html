@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}Analytics{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-start gap-3">
+        <div class="stat-icon" style="background:#d1fae5;color:#065f46;flex-shrink:0;">
+          <i class="bi bi-trophy"></i>
+        </div>
+        <div>
+          <div class="stat-label">Top Income Category</div>
+          <div class="fw-bold text-income mt-1">{{ top_income_cat.category__name|default:"N/A" }}</div>
+          {% if top_income_cat %}
+          <div class="text-muted small">₹{{ top_income_cat.total|floatformat:0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-start gap-3">
+        <div class="stat-icon" style="background:#fee2e2;color:#991b1b;flex-shrink:0;">
+          <i class="bi bi-arrow-up-circle"></i>
+        </div>
+        <div>
+          <div class="stat-label">Top Expense Category</div>
+          <div class="fw-bold text-expense mt-1">{{ top_expense_cat.category__name|default:"N/A" }}</div>
+          {% if top_expense_cat %}
+          <div class="text-muted small">₹{{ top_expense_cat.total|floatformat:0 }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-start gap-3">
+        <div class="stat-icon" style="background:#eff6ff;color:var(--primary);flex-shrink:0;">
+          <i class="bi bi-calculator"></i>
+        </div>
+        <div>
+          <div class="stat-label">Avg Monthly Income</div>
+          <div class="fw-bold text-primary mt-1">₹{{ avg_monthly_income|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-start gap-3">
+        <div class="stat-icon" style="background:#f3e8ff;color:#7c3aed;flex-shrink:0;">
+          <i class="bi bi-calendar-check"></i>
+        </div>
+        <div>
+          <div class="stat-label">Sunday Offerings (This Year)</div>
+          <div class="fw-bold mt-1" style="color:#7c3aed;">₹{{ sunday_offerings_year|floatformat:0 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>12-Month Income vs Expense Trend</h6>
+        <canvas id="trendChart" height="130"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>Expense by Category</h6>
+        <canvas id="expensePie" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Expense % Table -->
+<div class="card">
+  <div class="card-body">
+    <h6 class="fw-semibold mb-3"><i class="bi bi-bar-chart-steps me-2 text-primary"></i>Expense Breakdown</h6>
+    {% for item in expense_pct %}
+    <div class="mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="small fw-medium">{{ item.name }}</span>
+        <span class="small text-muted">₹{{ item.total|floatformat:0 }} ({{ item.pct }}%)</span>
+      </div>
+      <div class="progress" style="height: 8px; border-radius: 4px;">
+        <div class="progress-bar bg-danger" role="progressbar" style="width: {{ item.pct }}%"></div>
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No expense data available.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const monthlyTrend = {{ monthly_trend|safe }};
+const expenseCats = {{ expense_by_cat_json|safe }};
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: monthlyTrend.map(d => d.month),
+    datasets: [
+      {
+        label: 'Income', data: monthlyTrend.map(d => d.income),
+        borderColor: '#059669', backgroundColor: 'rgba(5,150,105,.1)',
+        fill: true, tension: 0.4, pointRadius: 3
+      },
+      {
+        label: 'Expense', data: monthlyTrend.map(d => d.expense),
+        borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,.1)',
+        fill: true, tension: 0.4, pointRadius: 3
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { beginAtZero: true, ticks: { callback: v => '₹' + v.toLocaleString() }, grid: { color: '#f1f5f9' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+if (expenseCats.length) {
+  const palette = ['#ef4444','#f97316','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899','#14b8a6'];
+  new Chart(document.getElementById('expensePie'), {
+    type: 'doughnut',
+    data: {
+      labels: expenseCats.map(c => c.name),
+      datasets: [{ data: expenseCats.map(c => c.total), backgroundColor: palette, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 10, font: { size: 10 } } },
+        tooltip: { callbacks: { label: ctx => `₹${parseFloat(ctx.raw).toLocaleString()}` } }
+      }
+    }
+  });
+}
+</script>
+{% endblock %}

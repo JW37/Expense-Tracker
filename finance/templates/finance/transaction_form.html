@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7 col-xl-6">
+    <div class="card">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-4">{{ title }}</h5>
+        <form method="post" id="txnForm" novalidate>
+          {% csrf_token %}
+
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label class="form-label fw-medium small">Date <span class="text-danger">*</span></label>
+              {{ form.date }}
+              {% if form.date.errors %}<div class="text-danger small">{{ form.date.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-medium small">Type <span class="text-danger">*</span></label>
+              {{ form.transaction_type }}
+              {% if form.transaction_type.errors %}<div class="text-danger small">{{ form.transaction_type.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-medium small">Category <span class="text-danger">*</span></label>
+              {{ form.category }}
+              {% if form.category.errors %}<div class="text-danger small">{{ form.category.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label fw-medium small">Sub-Category</label>
+              {{ form.subcategory }}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium small">Amount (₹) <span class="text-danger">*</span></label>
+              {{ form.amount }}
+              {% if form.amount.errors %}<div class="text-danger small">{{ form.amount.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium small">Notes</label>
+              {{ form.notes }}
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.is_pending }}
+                <label class="form-check-label" for="id_is_pending">Mark as Pending (not yet paid)</label>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+              <i class="bi bi-check2-circle me-2"></i>Save Transaction
+            </button>
+            <a href="{% url 'transaction_list' %}" class="btn btn-light px-4">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const typeSelect = document.getElementById('id_transaction_type');
+const catSelect = document.getElementById('id_category');
+const subSelect = document.getElementById('id_subcategory');
+
+async function loadCategories(type) {
+  if (!type) return;
+  const res = await fetch(`/ajax/categories/?type=${type}`);
+  const data = await res.json();
+  catSelect.innerHTML = '<option value="">---------</option>';
+  data.forEach(c => {
+    const opt = new Option(c.name, c.id);
+    catSelect.add(opt);
+  });
+  subSelect.innerHTML = '<option value="">---------</option>';
+}
+
+async function loadSubcategories(catId) {
+  if (!catId) { subSelect.innerHTML = '<option value="">---------</option>'; return; }
+  const res = await fetch(`/ajax/subcategories/?category_id=${catId}`);
+  const data = await res.json();
+  subSelect.innerHTML = '<option value="">---------</option>';
+  data.forEach(s => {
+    const opt = new Option(s.name, s.id);
+    subSelect.add(opt);
+  });
+}
+
+typeSelect.addEventListener('change', e => loadCategories(e.target.value));
+catSelect.addEventListener('change', e => loadSubcategories(e.target.value));
+
+// On edit, load subcategories for existing category
+const existingCat = catSelect.value;
+const existingSub = "{{ form.instance.subcategory_id|default:'' }}";
+if (existingCat) {
+  fetch(`/ajax/subcategories/?category_id=${existingCat}`)
+    .then(r => r.json())
+    .then(data => {
+      subSelect.innerHTML = '<option value="">---------</option>';
+      data.forEach(s => {
+        const opt = new Option(s.name, s.id);
+        if (s.id == existingSub) opt.selected = true;
+        subSelect.add(opt);
+      });
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-label mb-1">Income (This Month)</div>
+          <div class="stat-value text-income">₹{{ total_income|floatformat:0 }}</div>
+        </div>
+        <div class="stat-icon" style="background:var(--income-light);color:var(--income);">
+          <i class="bi bi-arrow-down-circle-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-label mb-1">Expense (This Month)</div>
+          <div class="stat-value text-expense">₹{{ total_expense|floatformat:0 }}</div>
+        </div>
+        <div class="stat-icon" style="background:var(--expense-light);color:var(--expense);">
+          <i class="bi bi-arrow-up-circle-fill"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-label mb-1">Net Balance</div>
+          <div class="stat-value {% if net_balance >= 0 %}text-income{% else %}text-expense{% endif %}">
+            ₹{{ net_balance|floatformat:0 }}
+          </div>
+        </div>
+        <div class="stat-icon" style="background:#eff6ff;color:var(--primary);">
+          <i class="bi bi-wallet2"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card card-stat h-100">
+      <div class="d-flex align-items-center justify-content-between">
+        <div>
+          <div class="stat-label mb-1">Pending Bills</div>
+          <div class="stat-value text-pending">{{ pending_count }}</div>
+        </div>
+        <div class="stat-icon" style="background:var(--pending-light);color:var(--pending);">
+          <i class="bi bi-clock-history"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>Monthly Income vs Expense</h6>
+        <canvas id="monthlyChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-pie-chart me-2 text-primary"></i>Expense by Category</h6>
+        <canvas id="categoryPie" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h6 class="fw-semibold mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>Sunday Offering Trend</h6>
+        <canvas id="offeringChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-semibold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Transactions</h6>
+          <a href="{% url 'transaction_list' %}" class="btn btn-sm btn-light text-primary">View All</a>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-clean table-hover mb-0 small">
+            <thead>
+              <tr>
+                <th>Date</th><th>Category</th><th>Amount</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for txn in recent_transactions %}
+              <tr>
+                <td>{{ txn.date|date:"d M" }}</td>
+                <td>
+                  <span class="badge rounded-pill {% if txn.transaction_type == 'Income' %}badge-income{% else %}badge-expense{% endif %}">
+                    {{ txn.category.name }}
+                  </span>
+                </td>
+                <td class="fw-semibold {% if txn.transaction_type == 'Income' %}text-income{% else %}text-expense{% endif %}">
+                  {% if txn.transaction_type == 'Income' %}+{% else %}-{% endif %}₹{{ txn.amount|floatformat:0 }}
+                </td>
+                <td>
+                  <span class="badge rounded-pill {% if txn.status == 'Paid' %}bg-success-subtle text-success{% else %}badge-pending{% endif %}">
+                    {{ txn.status }}
+                  </span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-3">No transactions yet.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const monthlyData = {{ monthly_data|safe }};
+const catExpense = {{ cat_expense|safe }};
+const offeringData = {{ offering_data|safe }};
+
+// Monthly Bar Chart
+new Chart(document.getElementById('monthlyChart'), {
+  type: 'bar',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [
+      {
+        label: 'Income', data: monthlyData.map(d => d.income),
+        backgroundColor: 'rgba(5, 150, 105, 0.8)', borderRadius: 6,
+      },
+      {
+        label: 'Expense', data: monthlyData.map(d => d.expense),
+        backgroundColor: 'rgba(220, 38, 38, 0.8)', borderRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true, plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' },
+           ticks: { callback: v => '₹' + v.toLocaleString() } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Category Pie
+if (catExpense.length) {
+  const colors = ['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  new Chart(document.getElementById('categoryPie'), {
+    type: 'doughnut',
+    data: {
+      labels: catExpense.map(c => c.category__name),
+      datasets: [{ data: catExpense.map(c => parseFloat(c.total)), backgroundColor: colors, borderWidth: 2 }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => `₹${parseFloat(ctx.raw).toLocaleString()}` } }
+      }
+    }
+  });
+} else {
+  document.getElementById('categoryPie').parentElement.innerHTML += '<p class="text-center text-muted small mt-3">No expense data this month.</p>';
+}
+
+// Offering Trend
+new Chart(document.getElementById('offeringChart'), {
+  type: 'line',
+  data: {
+    labels: offeringData.map(d => d.month),
+    datasets: [{
+      label: 'Sunday Offerings', data: offeringData.map(d => d.amount),
+      borderColor: '#1a56db', backgroundColor: 'rgba(26,86,219,.1)',
+      fill: true, tension: 0.4, pointBackgroundColor: '#1a56db', pointRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' },
+           ticks: { callback: v => '₹' + v.toLocaleString() } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

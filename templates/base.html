@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FaithLedger{% endblock %} – Church Account Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-light: #eff6ff;
+      --income: #059669;
+      --income-light: #d1fae5;
+      --expense: #dc2626;
+      --expense-light: #fee2e2;
+      --pending: #d97706;
+      --pending-light: #fef3c7;
+      --sidebar-w: 250px;
+    }
+    body { background: #f1f5f9; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    /* Sidebar */
+    #sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh; width: var(--sidebar-w);
+      background: #fff; box-shadow: 2px 0 12px rgba(0,0,0,.08);
+      z-index: 1040; display: flex; flex-direction: column; transition: transform .3s;
+    }
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem 1rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .sidebar-brand h5 { color: var(--primary); font-weight: 700; margin: 0; font-size: 1.15rem; }
+    .sidebar-brand small { color: #94a3b8; font-size: .75rem; }
+    .sidebar-nav { padding: .75rem 0; flex: 1; overflow-y: auto; }
+    .nav-link-item {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .65rem 1.25rem; color: #64748b; text-decoration: none;
+      font-size: .9rem; border-radius: 0; transition: all .2s;
+      border-left: 3px solid transparent;
+    }
+    .nav-link-item:hover, .nav-link-item.active {
+      background: var(--primary-light); color: var(--primary);
+      border-left-color: var(--primary);
+    }
+    .nav-link-item i { font-size: 1.1rem; width: 1.2rem; text-align: center; }
+
+    /* Main */
+    #main { margin-left: var(--sidebar-w); min-height: 100vh; }
+    .topbar {
+      background: #fff; padding: .75rem 1.5rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1030;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .page-content { padding: 1.5rem; }
+
+    /* Cards */
+    .card { border: none; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .card-stat { padding: 1.5rem; }
+    .stat-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+    }
+    .stat-value { font-size: 1.65rem; font-weight: 700; line-height: 1.1; }
+    .stat-label { font-size: .8rem; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+
+    /* Badge colors */
+    .badge-income { background: var(--income-light); color: var(--income); }
+    .badge-expense { background: var(--expense-light); color: var(--expense); }
+    .badge-pending { background: var(--pending-light); color: var(--pending); }
+
+    /* Table */
+    .table-clean th { background: #f8fafc; font-size: .8rem; text-transform: uppercase;
+      letter-spacing: .04em; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+    .table-clean td { vertical-align: middle; border-color: #f1f5f9; }
+
+    /* Amount color */
+    .text-income { color: var(--income) !important; }
+    .text-expense { color: var(--expense) !important; }
+    .text-pending { color: var(--pending) !important; }
+
+    /* Toasts */
+    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; }
+
+    /* Mobile */
+    #sidebar-overlay { display: none; }
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-100%); }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; }
+      #sidebar-overlay { display: block; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+        z-index: 1035; display: none; }
+      #sidebar-overlay.show { display: block; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% if user.is_authenticated %}
+<!-- Sidebar -->
+<nav id="sidebar">
+  <div class="sidebar-brand">
+    <div class="d-flex align-items-center gap-2">
+      <div style="width:38px;height:38px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+        <i class="bi bi-bank text-white"></i>
+      </div>
+      <div>
+        <h5>FaithLedger</h5>
+        <small>Church Finance</small>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-nav">
+    <a href="{% url 'dashboard' %}" class="nav-link-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <a href="{% url 'transaction_list' %}" class="nav-link-item {% if 'transaction' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i> Transactions
+    </a>
+    <a href="{% url 'calendar' %}" class="nav-link-item {% if 'calendar' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-calendar3"></i> Calendar
+    </a>
+    <a href="{% url 'reports' %}" class="nav-link-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+      <i class="bi bi-file-earmark-bar-graph"></i> Reports
+    </a>
+    <a href="{% url 'analytics' %}" class="nav-link-item {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+      <i class="bi bi-graph-up-arrow"></i> Analytics
+    </a>
+    <a href="{% url 'category_list' %}" class="nav-link-item {% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="bi bi-tags"></i> Categories
+    </a>
+    <div style="border-top:1px solid #e2e8f0;margin:.5rem 0;"></div>
+    <a href="{% url 'logout' %}" class="nav-link-item text-danger">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+  </div>
+</nav>
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- Main -->
+<div id="main">
+  <div class="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-sm btn-light d-md-none" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-5"></i>
+      </button>
+      <h6 class="mb-0 fw-semibold text-secondary">{% block page_title %}Dashboard{% endblock %}</h6>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2">
+        <i class="bi bi-person-circle me-1"></i>{{ user.username }}
+      </span>
+      <a href="{% url 'transaction_add' %}" class="btn btn-primary btn-sm rounded-pill px-3">
+        <i class="bi bi-plus-lg me-1"></i> Add
+      </a>
+    </div>
+  </div>
+  <div class="page-content">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+{% else %}
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Toast Container -->
+<div id="toast-container">
+  {% for message in messages %}
+  <div class="toast show align-items-center text-white border-0 mb-2
+    {% if message.tags == 'success' %}bg-success
+    {% elif message.tags == 'error' %}bg-danger
+    {% elif message.tags == 'warning' %}bg-warning
+    {% else %}bg-info{% endif %}"
+    role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="4000">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}x-circle{% else %}info-circle{% endif %} me-2"></i>
+        {{ message }}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0">
+        <h5 class="modal-title text-danger"><i class="bi bi-trash me-2"></i>Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-muted" id="deleteModalBody">
+        Are you sure you want to delete this item? This action cannot be undone.
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <form id="deleteForm" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  // Auto-dismiss toasts
+  document.querySelectorAll('.toast').forEach(t => {
+    const toast = bootstrap.Toast.getOrCreateInstance(t);
+    toast.show();
+    setTimeout(() => toast.hide(), 4000);
+  });
+
+  // Delete modal
+  function confirmDelete(url, message) {
+    document.getElementById('deleteModalBody').textContent = message || 'Are you sure you want to delete this?';
+    document.getElementById('deleteForm').action = url;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+  }
+
+  // Sidebar toggle (mobile)
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebar-overlay').classList.toggle('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebar-overlay').classList.remove('show');
+  }
+
+  // Chart.js defaults
+  Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+  Chart.defaults.color = '#64748b';
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

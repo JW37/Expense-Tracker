@@ -1,4 +1,4 @@
-# ⛪ FaithLedger – Church Account Management System
+# ⛪ Expense Tracker – Church Account Management System
 
 A complete, production-ready Django web application for managing church income and expenses.
 

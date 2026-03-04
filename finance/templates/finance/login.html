@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block auth_content %}
+{% load static %}
+<style>
+  .church-bg {
+    background-image: url('/static/images/church.jpeg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+  }
+</style>
+<div class="min-vh-100 d-flex">
+
+  <!-- Left panel -->
+  <div class="d-none d-lg-flex flex-column justify-content-center align-items-center text-white church-bg"
+       style="width:45%; position:relative; min-height:100vh;">
+
+    <!-- Dark overlay -->
+    <div style="position:absolute; top:0; left:0;
+                width:100%; height:100%;
+                background:rgba(0,0,0,0.55);
+                z-index:0;"></div>
+
+    <!-- Text on top of image -->
+    <div style="position:relative; z-index:1; text-align:center; padding:3rem;">
+
+      <h2 class="fw-bold mb-2" style="font-size:2rem;">Expense Tracker</h2>
+
+      <p class="text-center mb-4" style="max-width:320px; font-size:1rem; opacity:0.85;">
+        Manage your church finances with clarity, transparency, and ease.
+      </p>
+
+      <div class="d-flex flex-column gap-3" style="max-width:280px; margin:0 auto;">
+        {% for feature in features %}
+        <div class="d-flex align-items-center gap-3">
+          <div style="width:32px; height:32px;
+                      background:rgba(255,255,255,0.2);
+                      border-radius:8px;
+                      display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="bi bi-check-lg text-white"></i>
+          </div>
+          <span class="small text-white">{{ feature }}</span>
+        </div>
+        {% endfor %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="background:#f8fafc;">
+    <div class="w-100" style="max-width:420px;padding:2rem;">
+      <div class="text-center mb-4">
+        <div class="d-lg-none mb-3">
+          <div style="width:60px;height:60px;border-radius:18px;
+                      overflow:hidden;display:inline-flex;">
+            <img src="/static/images/church.jpeg" 
+                 alt="Church Logo"
+                 style="width:100%;height:100%;object-fit:cover;">
+          </div>
+        </div>
+        <h4 class="fw-bold text-dark">Welcome back</h4>
+        <p class="text-muted small">Sign in to your Expense Tracker account</p>
+      </div>
+
+      {% if error %}
+        <div class="alert alert-danger rounded-3">
+          <i class="bi bi-exclamation-circle me-2"></i>{{ error }}
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} rounded-3">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label fw-medium text-dark small">Username or Email</label>
+          <input type="text" name="username" class="form-control form-control-lg"
+                 placeholder="Enter your username or email" autofocus required>
+        </div>
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label fw-medium text-dark small mb-0">Password</label>
+            <a href="{% url 'password_reset_request' %}" class="text-primary small text-decoration-none">Forgot password?</a>
+          </div>
+          <input type="password" name="password" class="form-control form-control-lg"
+                 placeholder="Enter your password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold rounded-3">
+          <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+        </button>
+      </form>
+
+      <p class="text-center text-muted small mt-4">
+        Don't have an account? <a href="{% url 'register' %}" class="text-primary fw-semibold text-decoration-none">Register here</a><br><br>Expense Tracker &copy; {% now "Y" %} · Church Account Management
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<!-- Filter -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-sm-5">
+        <label class="form-label fw-medium small">From Date</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+      </div>
+      <div class="col-sm-5">
+        <label class="form-label fw-medium small">To Date</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+      </div>
+      <div class="col-sm-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card card-stat" style="border-top: 4px solid var(--income);">
+      <div class="stat-label">Total Income</div>
+      <div class="stat-value text-income">₹{{ total_income|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-stat" style="border-top: 4px solid var(--expense);">
+      <div class="stat-label">Total Expense</div>
+      <div class="stat-value text-expense">₹{{ total_expense|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-stat" style="border-top: 4px solid var(--pending);">
+      <div class="stat-label">Total Pending</div>
+      <div class="stat-value text-pending">₹{{ total_pending|floatformat:2 }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card card-stat" style="border-top: 4px solid var(--primary);">
+      <div class="stat-label">Net Balance</div>
+      <div class="stat-value {% if net_balance >= 0 %}text-income{% else %}text-expense{% endif %}">
+        ₹{{ net_balance|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Buttons -->
+<div class="d-flex gap-2 mb-3">
+  <a href="?date_from={{ date_from }}&date_to={{ date_to }}&export_excel=1"
+     class="btn btn-success">
+    <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+  </a>
+  <a href="?date_from={{ date_from }}&date_to={{ date_to }}&export_pdf=1"
+     class="btn btn-danger">
+    <i class="bi bi-file-earmark-pdf me-2"></i>Export PDF
+  </a>
+  <span class="ms-auto text-muted small align-self-center">
+    Showing {{ transactions.count }} transactions
+  </span>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-clean mb-0">
+        <thead>
+          <tr>
+            <th>Date</th><th>Type</th><th>Amount</th><th>Category</th><th>Sub-Category</th><th>Notes</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for txn in transactions %}
+          <tr>
+            <td>{{ txn.date|date:"d M Y" }}</td>
+            <td>
+              <span class="badge rounded-pill {% if txn.transaction_type == 'Income' %}badge-income{% else %}badge-expense{% endif %}">
+                {{ txn.transaction_type }}
+              </span>
+            </td>
+            <td class="fw-semibold {% if txn.transaction_type == 'Income' %}text-income{% else %}text-expense{% endif %}">
+              ₹{{ txn.amount|floatformat:2 }}
+            </td>
+            <td>{{ txn.category.name }}</td>
+            <td class="text-muted">{{ txn.subcategory.name|default:"—" }}</td>
+            <td class="text-muted small">{{ txn.notes|truncatechars:50 }}</td>
+            <td>
+              <span class="badge rounded-pill {% if txn.status == 'Paid' %}bg-success-subtle text-success{% else %}badge-pending{% endif %}">
+                {{ txn.status }}
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7" class="text-center py-5 text-muted">No transactions in this date range.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

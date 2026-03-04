@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}Calendar{% endblock %}
+{% block page_title %}Calendar View{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cal-header { background: var(--primary); color: white; text-align: center; padding: .4rem; border-radius: 8px 8px 0 0; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .cal-day-name {
+    text-align: center; padding: .4rem; font-size: .75rem; font-weight: 600;
+    color: #94a3b8; text-transform: uppercase;
+  }
+  .cal-cell {
+    border: 1px solid #e2e8f0; min-height: 90px; padding: .4rem .5rem;
+    transition: background .15s; cursor: default;
+  }
+  .cal-cell:hover { background: #f8fafc; }
+  .cal-cell.today { background: #eff6ff; }
+  .cal-cell.has-data { cursor: pointer; }
+  .cal-cell.has-data:hover { background: #f0f9ff; }
+  .cal-date {
+    font-size: .8rem; font-weight: 600; color: #374151;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; margin-bottom: .3rem;
+  }
+  .today .cal-date { background: var(--primary); color: white; }
+  .cal-tag { font-size: .7rem; border-radius: 4px; padding: .1rem .3rem; margin-bottom: .15rem; display: block; }
+  .cal-empty { background: #fafafa; border: 1px solid #f1f5f9; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Navigation -->
+<div class="card mb-4">
+  <div class="card-body d-flex align-items-center justify-content-between">
+    <a href="{% url 'calendar' %}?year={{ prev.year }}&month={{ prev.month }}" class="btn btn-light">
+      <i class="bi bi-chevron-left me-1"></i>Prev
+    </a>
+    <h5 class="fw-bold mb-0 text-primary">{{ month_name }} {{ year }}</h5>
+    <a href="{% url 'calendar' %}?year={{ next.year }}&month={{ next.month }}" class="btn btn-light">
+      Next<i class="bi bi-chevron-right ms-1"></i>
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <!-- Day Names -->
+    <div class="cal-grid" style="border-bottom: 2px solid #e2e8f0;">
+      {% for day_name in day_names %}
+        <div class="cal-day-name">{{ day_name }}</div>
+      {% endfor %}
+    </div>
+    <!-- Calendar Grid -->
+    <div class="cal-grid">
+      {% for week in grid %}
+        {% for cell in week %}
+          {% if cell %}
+            <div class="cal-cell {% if cell.date == today %}today{% endif %} {% if cell.daily %}has-data{% endif %}"
+              {% if cell.daily %}onclick="window.location='{% url 'calendar_day' year month cell.day %}'"{% endif %}>
+              <div class="cal-date">{{ cell.day }}</div>
+              {% if cell.daily %}
+                {% if cell.daily.income > 0 %}
+                  <span class="cal-tag" style="background:#d1fae5;color:#065f46;">+₹{{ cell.daily.income|floatformat:0 }}</span>
+                {% endif %}
+                {% if cell.daily.expense > 0 %}
+                  <span class="cal-tag" style="background:#fee2e2;color:#991b1b;">-₹{{ cell.daily.expense|floatformat:0 }}</span>
+                {% endif %}
+                {% if cell.daily.pending > 0 %}
+                  <span class="cal-tag" style="background:#fef3c7;color:#92400e;">⏳ {{ cell.daily.pending }} pending</span>
+                {% endif %}
+              {% endif %}
+            </div>
+          {% else %}
+            <div class="cal-cell cal-empty"></div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Legend -->
+<div class="d-flex gap-3 mt-3 flex-wrap">
+  <div class="d-flex align-items-center gap-2 small text-muted">
+    <span style="width:12px;height:12px;background:var(--income-light);border-radius:3px;display:inline-block;"></span> Income
+  </div>
+  <div class="d-flex align-items-center gap-2 small text-muted">
+    <span style="width:12px;height:12px;background:var(--expense-light);border-radius:3px;display:inline-block;"></span> Expense
+  </div>
+  <div class="d-flex align-items-center gap-2 small text-muted">
+    <span style="width:12px;height:12px;background:var(--pending-light);border-radius:3px;display:inline-block;"></span> Pending
+  </div>
+  <div class="d-flex align-items-center gap-2 small text-muted">
+    <span style="width:12px;height:12px;background:var(--primary-light);border-radius:3px;display:inline-block;border:1px solid #1a56db;"></span> Today
+  </div>
+  <span class="ms-auto text-muted small"><i class="bi bi-hand-index me-1"></i>Click a date to see details</span>
+</div>
+{% endblock %}

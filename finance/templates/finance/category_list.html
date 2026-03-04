@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% block title %}Categories{% endblock %}
+{% block page_title %}Categories & Sub-Categories{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-4">
+  <a href="{% url 'category_add' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-2"></i>Add Category
+  </a>
+  <a href="{% url 'subcategory_add' %}" class="btn btn-outline-primary">
+    <i class="bi bi-plus-lg me-2"></i>Add Sub-Category
+  </a>
+</div>
+
+<div class="row g-3">
+  <!-- Income -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header" style="background:var(--income-light);border:none;">
+        <h6 class="fw-bold text-income mb-0"><i class="bi bi-arrow-down-circle me-2"></i>Income Categories</h6>
+      </div>
+      <div class="card-body p-0">
+        {% for cat in categories %}
+        {% if cat.type == 'Income' %}
+        <div class="px-3 py-2 border-bottom">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <span class="fw-semibold">{{ cat.name }}</span>
+              {% if not cat.is_active %}<span class="badge bg-secondary ms-2 small">Disabled</span>{% endif %}
+            </div>
+            <div class="d-flex gap-1">
+              <a href="{% url 'category_edit' cat.pk %}" class="btn btn-sm btn-light text-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'category_toggle' cat.pk %}" class="btn btn-sm btn-light {% if cat.is_active %}text-warning{% else %}text-success{% endif %}">
+                <i class="bi bi-{% if cat.is_active %}pause-circle{% else %}play-circle{% endif %}"></i>
+              </a>
+            </div>
+          </div>
+          {% if cat.subcategories.all %}
+          <div class="mt-1 ms-3">
+            {% for sub in cat.subcategories.all %}
+            <div class="d-flex align-items-center justify-content-between py-1">
+              <span class="small text-muted">
+                <i class="bi bi-arrow-return-right me-1"></i>{{ sub.name }}
+                {% if not sub.is_active %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">Off</span>{% endif %}
+              </span>
+              <a href="{% url 'subcategory_edit' sub.pk %}" class="btn btn-sm btn-light text-muted py-0 px-1">
+                <i class="bi bi-pencil" style="font-size:.75rem;"></i>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Expense -->
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header" style="background:var(--expense-light);border:none;">
+        <h6 class="fw-bold text-expense mb-0"><i class="bi bi-arrow-up-circle me-2"></i>Expense Categories</h6>
+      </div>
+      <div class="card-body p-0">
+        {% for cat in categories %}
+        {% if cat.type == 'Expense' %}
+        <div class="px-3 py-2 border-bottom">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <span class="fw-semibold">{{ cat.name }}</span>
+              {% if not cat.is_active %}<span class="badge bg-secondary ms-2 small">Disabled</span>{% endif %}
+            </div>
+            <div class="d-flex gap-1">
+              <a href="{% url 'category_edit' cat.pk %}" class="btn btn-sm btn-light text-primary">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'category_toggle' cat.pk %}" class="btn btn-sm btn-light {% if cat.is_active %}text-warning{% else %}text-success{% endif %}">
+                <i class="bi bi-{% if cat.is_active %}pause-circle{% else %}play-circle{% endif %}"></i>
+              </a>
+            </div>
+          </div>
+          {% if cat.subcategories.all %}
+          <div class="mt-1 ms-3">
+            {% for sub in cat.subcategories.all %}
+            <div class="d-flex align-items-center justify-content-between py-1">
+              <span class="small text-muted">
+                <i class="bi bi-arrow-return-right me-1"></i>{{ sub.name }}
+                {% if not sub.is_active %}<span class="badge bg-secondary ms-1" style="font-size:.65rem;">Off</span>{% endif %}
+              </span>
+              <a href="{% url 'subcategory_edit' sub.pk %}" class="btn btn-sm btn-light text-muted py-0 px-1">
+                <i class="bi bi-pencil" style="font-size:.75rem;"></i>
+              </a>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

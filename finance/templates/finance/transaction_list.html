@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Transactions{% endblock %}
+{% block page_title %}Transactions{% endblock %}
+
+{% block content %}
+<!-- Filter Card -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-6 col-md-2">
+        {{ form.date_from.label_tag }}
+        {{ form.date_from }}
+      </div>
+      <div class="col-sm-6 col-md-2">
+        {{ form.date_to.label_tag }}
+        {{ form.date_to }}
+      </div>
+      <div class="col-sm-6 col-md-2">
+        {{ form.transaction_type.label_tag }}
+        {{ form.transaction_type }}
+      </div>
+      <div class="col-sm-6 col-md-2">
+        {{ form.category.label_tag }}
+        {{ form.category }}
+      </div>
+      <div class="col-sm-6 col-md-2">
+        {{ form.status.label_tag }}
+        {{ form.status }}
+      </div>
+      <div class="col-sm-6 col-md-2">
+        {{ form.search.label_tag }}
+        {{ form.search }}
+      </div>
+      <div class="col-12 d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-funnel me-1"></i>Filter
+        </button>
+        <a href="{% url 'transaction_list' %}" class="btn btn-light px-4">
+          <i class="bi bi-x-circle me-1"></i>Clear
+        </a>
+        <a href="{% url 'transaction_add' %}" class="btn btn-success ms-auto px-4">
+          <i class="bi bi-plus-lg me-1"></i>Add Transaction
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Row -->
+<div class="row g-3 mb-3">
+  <div class="col-sm-6 col-md-3">
+    <div class="card card-stat" style="border-left: 4px solid var(--income);">
+      <div class="stat-label">Filtered Income</div>
+      <div class="stat-value text-income" style="font-size:1.3rem;">₹{{ total_income|floatformat:0 }}</div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-3">
+    <div class="card card-stat" style="border-left: 4px solid var(--expense);">
+      <div class="stat-label">Filtered Expense</div>
+      <div class="stat-value text-expense" style="font-size:1.3rem;">₹{{ total_expense|floatformat:0 }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-clean table-hover mb-0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Sub-Category</th>
+            <th>Amount</th>
+            <th>Notes</th>
+            <th>Status</th>
+            <th class="text-end pe-3">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for txn in transactions %}
+          <tr>
+            <td class="fw-medium">{{ txn.date|date:"d M Y" }}</td>
+            <td>
+              <span class="badge rounded-pill {% if txn.transaction_type == 'Income' %}badge-income{% else %}badge-expense{% endif %}">
+                {% if txn.transaction_type == 'Income' %}
+                  <i class="bi bi-arrow-down me-1"></i>
+                {% else %}
+                  <i class="bi bi-arrow-up me-1"></i>
+                {% endif %}
+                {{ txn.transaction_type }}
+              </span>
+            </td>
+            <td>{{ txn.category.name }}</td>
+            <td class="text-muted">{{ txn.subcategory.name|default:"—" }}</td>
+            <td class="fw-semibold {% if txn.transaction_type == 'Income' %}text-income{% else %}text-expense{% endif %}">
+              {% if txn.transaction_type == 'Income' %}+{% else %}-{% endif %}₹{{ txn.amount|floatformat:2 }}
+            </td>
+            <td class="text-muted small">{{ txn.notes|truncatechars:40 }}</td>
+            <td>
+              <span class="badge rounded-pill {% if txn.status == 'Paid' %}bg-success-subtle text-success{% else %}badge-pending{% endif %}">
+                {{ txn.status }}
+              </span>
+            </td>
+            <td class="text-end pe-3">
+              <a href="{% url 'transaction_edit' txn.pk %}" class="btn btn-sm btn-light text-primary me-1">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button class="btn btn-sm btn-light text-danger"
+                onclick="confirmDelete('{% url 'transaction_delete' txn.pk %}', 'Delete ₹{{ txn.amount }} {{ txn.transaction_type }} transaction on {{ txn.date }}?')">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+              No transactions found. <a href="{% url 'transaction_add' %}">Add one!</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if transactions.has_other_pages %}
+  <div class="card-footer bg-transparent d-flex justify-content-between align-items-center">
+    <span class="text-muted small">
+      Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}
+    </span>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        {% if transactions.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ transactions.previous_page_number }}">«</a></li>
+        {% endif %}
+        {% for num in transactions.paginator.page_range %}
+          {% if transactions.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+          {% elif num > transactions.number|add:'-3' and num < transactions.number|add:'3' %}
+            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+          {% endif %}
+        {% endfor %}
+        {% if transactions.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ transactions.next_page_number }}">»</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
